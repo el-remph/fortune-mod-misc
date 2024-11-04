@@ -14,10 +14,18 @@ pkgver() {
 }
 
 build() {
-	local ambians=https://motd.ambians.com/quotes.php/name curlopt=--compressed i
-	curl $curlopt "$ambians/linux_ms_fortunes/toc_id/1-1-23/s/[0-130:10]" | ./ambians-scrap.pl > ms-fortunes
-	curl $curlopt "$ambians/freebsd_murphys_law/toc_id/1-0-10/s/[0-830:10]" | ./ambians-scrap.pl > freebsd-murphy
-	curl $curlopt --insecure https://quotes.cat-v.org/programming/ | ./cat-v-scrap.pl > cat-v-programming-quotes
+	local i ambians=https://motd.ambians.com/quotes.php/name
+
+	curl --compressed --parallel	\
+		"$ambians/linux_ms_fortunes/toc_id/1-1-23/s/[0-130:10]" -o 'ms-fortunes.html.#1'	\
+		"$ambians/freebsd_murphys_law/toc_id/1-0-10/s/[0-830:10]" -o 'freebsd-murphy.html.#1'	\
+		--insecure https://quotes.cat-v.org/programming/ -o cat-v-programming-quotes.html
+
+	for i in ms-fortunes freebsd-murphy; do
+		./ambians-scrap.pl $i.html.* > $i
+	done
+	./cat-v-scrap.pl cat-v-programming-quotes.html > cat-v-programming-quotes
+
 	for i in ${_out[@]%.dat}; do
 		strfile $i
 	done
