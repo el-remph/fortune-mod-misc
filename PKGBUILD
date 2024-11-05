@@ -7,30 +7,39 @@ depends=() # fr
 source=(ambians-scrap.pl cat-v-scrap.sed)
 makedepends=(curl perl sed fortune-mod) # or anything that provides strfile
 sha384sums=(SKIP SKIP)
-_out=(ms-fortunes.dat freebsd-murphy.dat cat-v-programming-quotes.dat) # easier to remove extension than add
+_curlopt='--compressed --no-progress-meter'
 
 pkgver() {
 	printf 'r%d.%s' `git rev-list --count HEAD` `git rev-parse --short=7 HEAD`
 }
 
 build() {
-	local i ambians=https://motd.ambians.com/quotes.php/name
+	local i
+	local -a pids=()
 
-	curl --compressed --parallel	\
-		"$ambians/linux_ms_fortunes/toc_id/1-1-23/s/[0-130:10]" -o 'ms-fortunes.html.#1'	\
-		"$ambians/freebsd_murphys_law/toc_id/1-0-10/s/[0-830:10]" -o 'freebsd-murphy.html.#1'	\
-		--insecure https://quotes.cat-v.org/programming/index.md -o cat-v-programming-quotes.md
-
-	for i in ms-fortunes freebsd-murphy; do
-		./ambians-scrap.pl $i.html.* > $i
+	for i in 'linux_ms_fortunes 1-1-23 130 ms-fortunes' 'freebsd_murphys_law 1-0-10 830 freebsd-murphy'; do
+		set -- $i
+		{
+			curl $_curlopt "https://motd.ambians.com/quotes.php/name/$1/toc_id/$2/s/[0-$3:10]" |
+				./ambians-scrap.pl >$4
+			strfile "$4"
+		} &
+		pids+=($!)
 	done
-	./cat-v-scrap.sed cat-v-programming-quotes.md > cat-v-programming-quotes
 
-	for i in ${_out[@]%.dat}; do
-		strfile $i
+	{
+		curl $_curlopt --insecure https://quotes.cat-v.org/programming/index.md |
+			./cat-v-scrap.sed > cat-v-programming-quotes
+		strfile cat-v-programming-quotes
+	} &
+	pids+=($!)
+
+	for i in ${pids[@]}; do
+		wait $i
 	done
 }
 
 package() {
+	local -a _out=(ms-fortunes.dat freebsd-murphy.dat cat-v-programming-quotes.dat) # easier to remove extension than add
 	install -m 0644 -Dt "$pkgdir"/usr/share/fortune ${_out[@]} ${_out[@]%.dat}
 }
