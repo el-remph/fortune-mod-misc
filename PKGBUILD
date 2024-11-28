@@ -4,10 +4,25 @@ pkgrel=1
 pkgver=0
 arch=(any) # fr
 depends=() # fr
-source=(ambians-scrap.pl cat-v-scrap.sed)
 makedepends=(curl perl sed fortune-mod) # or anything that provides strfile
-sha384sums=(SKIP SKIP)
+
+_shlomif=fortunes-shlomif-0.22.8
 _out=(ms-fortunes.dat freebsd-murphy.dat cat-v-programming-quotes.dat) # easier to remove extension than add
+
+source=(
+	ambians-scrap.pl cat-v-scrap.sed	# regular sources, come with the git repo
+	https://www.shlomifish.org/humour/fortunes/$_shlomif.tar.xz
+	# This is available over TLS with the usual cat-v.org signing key, but it's
+	# a pain to persuade makepkg(1) to accept it. Actually easier to just not
+	# secure at all, and verify with sha384sum(1) instead
+	cat-v-programming-quotes.md::http://quotes.cat-v.org/programming/index.md
+)
+sha384sums=(
+	SKIP SKIP
+	517acababfecc4751e771fc3902c4500f7ff0777d57add36e4279b5df02312993e39052bc9dc6ec37177026e0936379e
+	22c51d7fc598d8ece29c15b41f8b2f3e17936858423d89d8d0982d99e5c2940696274bcc21fe7912f8a75c38a9931390
+)
+
 
 pkgver() {
 	printf 'r%d.%s' `git rev-list --count HEAD` `git rev-parse --short=7 HEAD`
@@ -17,16 +32,15 @@ prepare() {
 	local -r ambians=https://motd.ambians.com/quotes.php/name
 	curl --compressed --parallel	\
 		"$ambians/linux_ms_fortunes/toc_id/1-1-23/s/[0-130:10]" -o 'ms-fortunes.html.#1'	\
-		"$ambians/freebsd_murphys_law/toc_id/1-0-10/s/[0-830:10]" -o 'freebsd-murphy.html.#1'	\
-		--insecure https://quotes.cat-v.org/programming/index.md -o cat-v-programming-quotes.md
+		"$ambians/freebsd_murphys_law/toc_id/1-0-10/s/[0-830:10]" -o 'freebsd-murphy.html.#1'
 }
 
 build() {
 	local i
-
 	for i in ms-fortunes freebsd-murphy; do
 		./ambians-scrap.pl $i.html.* > $i
 	done
+
 	./cat-v-scrap.sed cat-v-programming-quotes.md > cat-v-programming-quotes
 
 	for i in ${_out[@]%.dat}; do
@@ -35,5 +49,15 @@ build() {
 }
 
 package() {
-	install -m 0644 -Dt "$pkgdir"/usr/share/fortune ${_out[@]} ${_out[@]%.dat}
+	set -x -- ${_out[@]}
+	local file
+	# would have loved to use extglob here
+	for file in $_shlomif/*.dat; do
+		case ${file##*/} in
+		(shlomif-fav.dat|bbt.dat|friends.dat) ;; # avoid conflicts and American `humour'
+		(*) set -- "$@" $file ;;
+		esac
+	done
+	install -m 0644 -Dt "$pkgdir"/usr/share/fortune $@ ${@%.dat}
+	set +x
 }
