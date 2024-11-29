@@ -1,7 +1,7 @@
 pkgname=fortune-mod-misc
 pkgdesc="Some fortunes that don't come with fortune-mod"
 pkgrel=1
-pkgver=0
+pkgver=r6.bc2c14e
 arch=(any) # fr
 depends=() # fr
 source=(ambians-scrap.pl cat-v-scrap.sed)
@@ -15,10 +15,13 @@ pkgver() {
 
 prepare() {
 	local -r ambians=https://motd.ambians.com/quotes.php/name
-	curl --compressed --parallel	\
+	local i splitbrain
+	curl -vL --compressed --parallel	\
 		"$ambians/linux_ms_fortunes/toc_id/1-1-23/s/[0-130:10]" -o 'ms-fortunes.html.#1'	\
 		"$ambians/freebsd_murphys_law/toc_id/1-0-10/s/[0-830:10]" -o 'freebsd-murphy.html.#1'	\
-		--insecure https://quotes.cat-v.org/programming/index.md -o cat-v-programming-quotes.md
+		http://quotes.cat-v.org/programming/index.md -o cat-v-programming-quotes.md	\
+		'https://www.splitbrain.org/_media/projects/fortunes/fortune-{discworld,fgump,hitchhiker,simpsons-chalkboard,starwars,xfiles}.tgz'	\
+			-o '#1.tar.gz'
 }
 
 build() {
@@ -27,6 +30,7 @@ build() {
 	for i in ms-fortunes freebsd-murphy; do
 		./ambians-scrap.pl $i.html.* > $i
 	done
+
 	./cat-v-scrap.sed cat-v-programming-quotes.md > cat-v-programming-quotes
 
 	for i in ${_out[@]%.dat}; do
@@ -35,5 +39,11 @@ build() {
 }
 
 package() {
+	local splitbrain[0]
+	for i in *.tar.gz; do
+		tar xzf $i
+		i=${i%.tar.gz} _out+=(fortune-$i/*.dat)
+	done
+
 	install -m 0644 -Dt "$pkgdir"/usr/share/fortune ${_out[@]} ${_out[@]%.dat}
 }
