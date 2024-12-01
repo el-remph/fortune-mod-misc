@@ -1,4 +1,8 @@
 #!/bin/sed -Ef
+# SPDX-FileCopyrightText: 2024 The Remph
+# SPDX-License-Identifier: FSFULLRWD
+# See COPYING
+#
 # Scrapes fortunes from https://quotes.cat-v.org markdown
 # This is not, strictly speaking, how you parse markdown. Works anyway
 
