@@ -37,9 +37,11 @@ sha384sums=(
 )
 
 
-pkgver() {
-	printf 'r%d.%s' `git rev-list --count HEAD` `git rev-parse --short=7 HEAD`
-}
+pkgver() (
+	set -o pipefail
+	git describe --long --tags | sed -e s/^v// -e s/-/.r/ -e y/-/./ ||
+		printf 'r%d.%s' `git rev-list --count HEAD` `git rev-parse --short=7 HEAD`
+)
 
 prepare() {
 	local -r ambians=https://motd.ambians.com/quotes.php/name
