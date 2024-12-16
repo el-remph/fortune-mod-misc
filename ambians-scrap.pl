@@ -4,6 +4,7 @@
 # See COPYING
 #
 # scrapes fortunes from https://motd.ambians.com, with apologies to same
+use autodie;
 use strict;
 use warnings;
 

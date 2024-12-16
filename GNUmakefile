@@ -12,10 +12,11 @@ FORTUNES = ms-fortunes freebsd-murphy cat-v-programming-quotes ${JVZANTVOORT_FOR
 TARGETS = ${FORTUNES} ${FORTUNES:=.dat}
 all: ${TARGETS}
 
-PREFIX = /usr # not /usr/local since fortune-mod compiles in this default
+# not /usr/local since fortune-mod compiles in this default
+PREFIX = /usr
 install: all
 	install -m 0644 -Dt ${DESTDIR}${PREFIX}/share/fortune $(filter-out offensive/%,${TARGETS})
-	install -m 0644 -Dt ${DESTDIR}${PREFIX}/share/fortune/offensive $(filter offensive/%,${TARGETS})
+	install -m 0644 -Dt ${DESTDIR}${PREFIX}/share/fortune/off $(filter offensive/%,${TARGETS})
 
 DL = ${AMBIANS_MS} ${AMBIANS_MURPHY} ${JVZANTVOORT_FORTUNES} cat-v-programming-quotes.md
 download: ${DL} # Phony target for PKGBUILD
@@ -23,7 +24,7 @@ download: ${DL} # Phony target for PKGBUILD
 clean_download:
 	rm -f ${DL}
 clean_fortunes:
-	rm -f ${FORTUNES}
+	rm -f ${TARGETS}
 clean: clean_download clean_fortunes
 
 .PHONY = all install download clean clean_download clean_fortunes
